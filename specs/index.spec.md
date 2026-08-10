@@ -31,6 +31,7 @@ Machine-readable index for autonomous reconciliation (`/reconcile` skill).
 | `platform/openshell-gateway-tls.spec.md` | platform | cert-manager, TLS certificates, SAN management | CP | openshell-gateway |
 | `platform/openshell-gateway-routing.spec.md` | platform | GRPCRoute, BackendTLSPolicy, NetworkPolicy | CP | openshell-gateway, openshell-gateway-tls |
 | `platform/openshell-gateway-oidc.spec.md` | platform | OIDC authentication, gateway.toml injection | CP | openshell-gateway, openshell-gateway-tls |
+| `platform/global-architecture.spec.md` | platform | Global hub, multi-cloud, CNPG, Tekton, ArgoCD, Vault | CP, ALL | data-model, control-plane |
 | `web-console/architecture.spec.md` | web-console | Web console, BFF, browser session, UI routes | WEB, SDK, API | data-model, security, UI standards |
 | `standards/platform/cross-cutting.spec.md` | standards | - | ALL | - |
 | `standards/control-plane/conventions.spec.md` | standards | - | CP | - |
