@@ -1,0 +1,764 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>HyperShell Fleet - Agent SDLC (animated aging board mockup)</title>
+<style>
+  :root{
+    --bg:#0f1214; --surface:#1b1d21; --surface-2:#26292d; --stroke:#444548; --stroke-subtle:#333539;
+    --text:#e0e0e0; --text-subtle:#9a9da0;
+    --success:#3d7317; --success-br:#5ba417;
+    --warning:#dca614; --warning-br:#f0c040; --danger:#b1380b; --danger-br:#e2532a;
+    --info:#0066cc; --info-br:#4a9eff; --unknown:#8a8d90; --teal:#19b5b6;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:var(--bg);color:var(--text);
+    font-family:"RedHatText","Red Hat Text",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    font-size:14px;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+  h1,h2,h3{font-family:"RedHatDisplay","Red Hat Display",inherit;font-weight:500;margin:0}
+  a{color:var(--info-br);text-decoration:none}a:hover{text-decoration:underline}
+  .mono{font-family:"RedHatMono",ui-monospace,SFMono-Regular,Menlo,monospace}
+
+  .mock-banner{background:rgba(220,166,20,.12);border-bottom:1px solid var(--warning);color:var(--warning);font-size:12px;padding:5px 12px;text-align:center;flex:0 0 auto}
+  .masthead{display:flex;align-items:center;gap:14px;padding:9px 20px;background:#151719;border-bottom:1px solid var(--stroke-subtle);flex:0 0 auto}
+  .masthead h1{font-size:17px}
+  .brand-dot{width:22px;height:22px;border-radius:5px;background:linear-gradient(135deg,var(--info-br),var(--teal))}
+  .clock{margin-left:auto;display:flex;align-items:center;gap:10px;color:var(--text-subtle);font-size:12px}
+  .clock .simtime{color:var(--text);font-variant-numeric:tabular-nums}
+  .clock .xbadge{background:var(--surface-2);border:1px solid var(--stroke);border-radius:10px;padding:1px 8px;color:var(--teal);font-size:11px}
+  .pulse{width:9px;height:9px;border-radius:50%;background:var(--success-br);animation:pulse 2s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(91,164,23,.6)}70%{box-shadow:0 0 0 7px rgba(91,164,23,0)}100%{box-shadow:0 0 0 0 rgba(91,164,23,0)}}
+
+  .tabs{display:flex;gap:2px;padding:0 20px;background:#151719;border-bottom:1px solid var(--stroke-subtle);flex:0 0 auto}
+  .tab{padding:10px 18px;color:var(--text-subtle);cursor:pointer;border-bottom:2px solid transparent;user-select:none}
+  .tab:hover{color:var(--text)}
+  .tab.active{color:#fff;border-bottom-color:var(--info-br)}
+  .tab .count{font-size:11px;color:var(--text-subtle);background:var(--surface-2);border-radius:10px;padding:1px 7px;margin-left:7px}
+
+  .toolbar{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:9px 20px;flex:0 0 auto;border-bottom:1px solid var(--stroke-subtle)}
+  .chip{background:var(--surface-2);border:1px solid var(--stroke);border-radius:16px;padding:4px 12px;color:var(--text-subtle);cursor:pointer;font-size:12px;user-select:none}
+  .chip.on{color:#fff;border-color:var(--info-br);background:rgba(0,102,204,.18)}
+  .chip.danger.on{border-color:var(--danger-br);background:rgba(177,56,11,.2);color:var(--danger-br)}
+  .search{background:var(--surface);border:1px solid var(--stroke);border-radius:6px;color:var(--text);padding:6px 10px;width:180px;font-size:13px}
+  .spacer{flex:1}
+  .sim-ctrl{display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--stroke);border-radius:16px;padding:2px 4px 2px 10px}
+  .sim-ctrl .pp{cursor:pointer;color:var(--text);font-size:14px;width:24px;height:24px;display:grid;place-items:center;border-radius:50%}
+  .sim-ctrl .pp:hover{background:var(--surface-2)}
+  .sim-ctrl .sp{cursor:pointer;color:var(--text-subtle);font-size:11px;padding:3px 8px;border-radius:12px}
+  .sim-ctrl .sp.on{color:#fff;background:var(--teal)}
+  .legend{display:flex;align-items:center;gap:6px;color:var(--text-subtle);font-size:11px}
+  .sw{width:10px;height:10px;border-radius:2px;display:inline-block}
+
+  .view{flex:1 1 auto;min-height:0;overflow:hidden;display:flex;flex-direction:column}
+  .view.hidden{display:none}
+
+  .board-wrap{flex:1 1 auto;min-height:0;display:flex;overflow:hidden}
+  .axis{flex:0 0 44px;position:relative;border-right:1px solid var(--stroke-subtle)}
+  .axis .cap{position:absolute;top:6px;left:0;right:0;text-align:center;font-size:9px;color:var(--text-subtle);line-height:1.2}
+  .axis .tick{position:absolute;left:0;right:5px;text-align:right;font-size:10px;color:var(--text-subtle);transform:translateY(-50%)}
+
+  .board-area{flex:1 1 auto;display:flex;flex-direction:column;min-height:0;padding:8px 14px 0 8px}
+  .col-heads{flex:0 0 auto;display:flex;gap:8px}
+  .col-heads .ch{flex:1 1 0;min-width:0;padding:6px 8px;border-radius:6px 6px 0 0;background:var(--surface);border:1px solid var(--stroke-subtle);border-bottom:none;display:flex;align-items:center;gap:7px}
+  .col-heads .ch .nm{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .col-heads .ch .wip{margin-left:auto;font-size:11px;color:var(--text-subtle);background:var(--surface-2);border-radius:10px;padding:0 7px;min-width:20px;text-align:center}
+  .col-heads .ch.c-good .nm{color:var(--success-br)}
+  .col-heads .ch.c-intake .nm{color:var(--warning)}
+
+  .stage{position:relative;flex:1 1 auto;min-height:0;border:1px solid var(--stroke-subtle);border-top:none;border-radius:0 0 6px 6px;overflow:hidden;
+    background:linear-gradient(180deg,rgba(27,29,33,0) 0%,rgba(27,29,33,0) 38%,rgba(220,166,20,.06) 55%,rgba(177,56,11,.09) 72%,rgba(177,56,11,.18) 100%)}
+  .colsep{position:absolute;top:0;bottom:0;border-left:1px solid var(--stroke-subtle);pointer-events:none}
+  .bandline{position:absolute;left:0;right:0;border-top:1px dashed var(--stroke);pointer-events:none}
+  .dtag{position:absolute;bottom:6px;font-size:9px;letter-spacing:.5px;color:var(--danger-br);opacity:.75;pointer-events:none}
+  .sleline{position:absolute;border-top:1px dashed var(--danger-br);opacity:.55;pointer-events:none}
+  .sleline .slelbl{position:absolute;right:4px;top:-11px;font-size:8px;color:var(--danger-br);white-space:nowrap}
+
+  /* Escalation lane */
+  .esc{flex:0 0 auto;border-top:2px solid var(--danger);background:linear-gradient(180deg,rgba(177,56,11,.1),rgba(177,56,11,.03));padding:7px 14px;min-height:104px;max-height:132px;display:flex;flex-direction:column}
+  .esc.clear{border-top-color:var(--success);background:linear-gradient(180deg,rgba(61,115,23,.08),transparent);min-height:40px}
+  .esc-head{display:flex;align-items:center;gap:9px;margin-bottom:6px;flex:0 0 auto}
+  .esc-head .ic{width:22px;height:22px;border-radius:5px;background:var(--danger);display:grid;place-items:center;font-weight:700;color:#fff;font-size:13px}
+  .esc.clear .esc-head .ic{background:var(--success)}
+  .esc-head h2{font-size:14px;color:#fff}
+  .esc-head .esc-sub{color:var(--text-subtle);font-size:12px}
+  .esc-row{display:flex;gap:8px;overflow-x:auto;flex:1 1 auto;align-items:stretch;padding-bottom:3px}
+  .ecard{flex:0 0 250px;background:var(--surface);border:1px solid var(--stroke);border-left:3px solid var(--danger-br);border-radius:6px;padding:6px 9px;cursor:pointer}
+  .ecard:hover{background:#202327;border-color:var(--info-br)}
+  .ecard.sev-1{border-left-color:var(--warning)}
+  .ecard.sev-2{border-left-color:var(--warning-br)}
+  .ecard .er1{display:flex;align-items:center;gap:7px}
+  .ecard .ekey{font-weight:700;font-size:11.5px}
+  .ecard .eage{margin-left:auto;font-size:10.5px;color:var(--danger-br);font-weight:700}
+  .ecard .etitle{font-size:11.5px;margin:3px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ecard .ereason{font-size:10px;color:var(--danger-br);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  .card{position:absolute;top:0;left:0;will-change:transform;background:var(--surface);border:1px solid var(--stroke);border-left:3px solid var(--unknown);
+    border-radius:6px;padding:6px 8px;cursor:pointer;overflow:hidden}
+  .card:hover{box-shadow:0 3px 14px rgba(0,0,0,.5);border-color:var(--info-br);z-index:20}
+  .card.k-active{border-left-color:var(--info-br)}
+  .card.k-good{border-left-color:var(--success-br)}
+  .card.k-reject{border-left-color:var(--danger-br)}
+  .card.k-paused{border-left-color:var(--warning)}
+  .card.attn{border-color:var(--danger);box-shadow:0 0 0 1px rgba(177,56,11,.35)}
+  .card.attn.paused{border-color:var(--warning);box-shadow:0 0 0 1px rgba(220,166,20,.35)}
+  .card.dim{opacity:.22;filter:saturate(.3)}
+  .card .top{display:flex;align-items:center;gap:6px}
+  .card .key{font-weight:700;font-size:11.5px}
+  .card .meter{display:inline-flex;align-items:center;gap:2px;margin-left:auto}
+  .card .meter .cell{width:7px;height:7px;border-radius:2px;border:1px solid var(--stroke);background:transparent}
+  .card .meter .cell.f-mild{background:var(--warning);opacity:.45;border-color:var(--warning)}
+  .card .meter .cell.f-warn{background:var(--warning);border-color:var(--warning)}
+  .card .meter .cell.f-danger{background:var(--danger-br);border-color:var(--danger)}
+  .card .meter .mlabel{font-size:8.5px;margin-left:3px;letter-spacing:.2px}
+  .card .meter .mlabel.mild,.card .meter .mlabel.warn{color:var(--warning-br)}
+  .card .meter .mlabel.danger{color:var(--danger-br);font-weight:700;text-transform:uppercase}
+  .card .meter .bar{width:34px;height:6px;border-radius:3px;background:var(--surface-2);border:1px solid var(--stroke);overflow:hidden}
+  .card .meter .bar .fill{display:block;height:100%}
+  .card .meter .bar .fill.f-mild{background:var(--warning);opacity:.55}
+  .card .meter .bar .fill.f-warn{background:var(--warning)}
+  .card .meter .bar .fill.f-danger{background:var(--danger-br)}
+  .card .ttl{font-size:11.5px;color:var(--text);margin:3px 0 4px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .card .foot{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .card .scope{font-size:9.5px;color:var(--text-subtle);background:var(--surface-2);border-radius:8px;padding:0 6px}
+  .card .age{font-size:10px;margin-left:auto}
+  .card .age.warn{color:var(--warning-br)}
+  .card .age.bad{color:var(--danger-br);font-weight:700}
+  .card .reason{font-size:10px;color:var(--danger-br);margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .card .envs{display:flex;gap:4px;margin-top:5px;align-items:center}
+  .bidc-sm{width:18px;height:18px;border-radius:4px;flex:0 0 auto}
+  .env{font-size:9px;border-radius:7px;padding:0 6px;border:1px solid}
+  .env.dev{color:#c9ccce;border-color:#55585c;background:rgba(138,141,144,.12)}
+  .env.int{color:var(--info-br);border-color:var(--info);background:rgba(0,102,204,.14)}
+  .env.stage{color:var(--warning-br);border-color:var(--warning);background:rgba(220,166,20,.12)}
+  .env.prod{color:var(--success-br);border-color:var(--success);background:rgba(61,115,23,.16)}
+  .card .goto{font-size:9px;color:var(--teal);margin-left:auto;white-space:nowrap}
+
+  /* Shipped column = bundle crates */
+  #shipped{position:absolute;top:0;bottom:0;overflow-y:auto;padding:6px 6px 10px;background:var(--bg);border-left:1px solid var(--stroke-subtle);z-index:3}
+  .crate{background:var(--surface);border:1px solid var(--stroke);border-radius:7px;margin-bottom:8px;overflow:hidden;animation:fade .35s ease}
+  .crate.dim{opacity:.3;filter:saturate(.3)}
+  .crate.st-building{border-style:dashed;border-color:var(--teal)}
+  .crate.st-cut{border-color:var(--warning)}
+  .crate.st-rolling{border-left:3px solid var(--warning)}
+  .crate.st-prod{border-left:3px solid var(--success-br)}
+  .crate-head{display:flex;align-items:center;gap:7px;padding:6px 8px;cursor:pointer;border-bottom:1px solid var(--stroke-subtle)}
+  .crate-head:hover{background:var(--surface-2)}
+  .crate-head .cv{min-width:0}
+  .crate-head .cver{font-weight:700;font-size:12.5px}
+  .crate-head .cmeta{font-size:9.5px;color:var(--text-subtle);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cstatus{margin-left:auto;font-size:9px;border-radius:8px;padding:1px 7px;white-space:nowrap;border:1px solid}
+  .cstatus.st-building{color:var(--teal);border-color:var(--teal);background:rgba(25,181,182,.12)}
+  .cstatus.st-cut{color:var(--warning-br);border-color:var(--warning);background:rgba(220,166,20,.12)}
+  .cstatus.st-rolling{color:var(--warning-br);border-color:var(--warning);background:rgba(220,166,20,.12)}
+  .cstatus.st-prod{color:var(--success-br);border-color:var(--success);background:rgba(61,115,23,.16)}
+  .crate-envs{display:flex;flex-wrap:wrap;gap:4px;padding:6px 8px 2px}
+  .await{font-size:9px;color:var(--text-subtle);font-style:italic}
+  .crate-body{padding:4px 6px 7px}
+  .mini{display:flex;align-items:center;gap:6px;padding:4px 5px;border-radius:5px;cursor:pointer;animation:fade .4s ease}
+  .mini:hover{background:var(--surface-2)}
+  .mini .mk{font-weight:700;font-size:10.5px;color:var(--text-subtle);flex:0 0 auto}
+  .mini .mt{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mini .ms{font-size:9px;color:var(--text-subtle);margin-left:auto;flex:0 0 auto}
+  .cempty{font-size:10px;color:var(--text-subtle);font-style:italic;padding:4px 5px}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+  /* Shipped = version x hub-cluster matrix */
+  .mx-title{font-size:11px;color:var(--text-subtle);padding:2px 2px 6px;text-transform:uppercase;letter-spacing:.5px}
+  .mx-head{display:grid;grid-template-columns:1fr repeat(3,40px);align-items:end;gap:2px;padding:0 2px 4px;position:sticky;top:0;background:var(--bg);z-index:2}
+  .mx-hub{display:flex;flex-direction:column;align-items:center;font-size:10px;font-weight:700;line-height:1.15}
+  .mx-hub i{font-size:8px;font-style:normal;opacity:.7;font-weight:400}
+  .mx-hub.env-prod{color:var(--success-br)} .mx-hub.env-stage{color:var(--warning-br)} .mx-hub.env-int{color:var(--info-br)} .mx-hub.env-dev{color:var(--text-subtle)}
+  .mx-row{display:grid;grid-template-columns:1fr repeat(3,40px);align-items:center;gap:2px;padding:5px 2px;border-top:1px solid var(--stroke-subtle);cursor:pointer;border-left:3px solid transparent;animation:fade .3s ease}
+  .mx-row:hover{background:#17191c}
+  .mx-row.exp{background:#17191c}
+  .mx-row.dim{opacity:.3}
+  .mx-row.st-prod{border-left-color:var(--success-br)} .mx-row.st-rolling{border-left-color:var(--warning)} .mx-row.st-building{border-left-color:var(--teal);border-left-style:dashed} .mx-row.st-prev{border-left-color:var(--stroke)}
+  .mx-ver{display:flex;align-items:center;gap:6px;min-width:0}
+  .mx-ver .mxv{display:flex;flex-direction:column;line-height:1.1;min-width:0}
+  .mx-ver .mxv b{font-size:12px}
+  .mx-ver .mxv i{font-size:8.5px;font-style:normal}
+  .mxs.st-prod{color:var(--success-br)} .mxs.st-rolling{color:var(--warning-br)} .mxs.st-building{color:var(--teal)} .mxs.st-prev{color:var(--text-subtle)}
+  .mx-cell{display:flex;justify-content:center;align-items:center}
+  .mk-dot{width:14px;height:14px;border-radius:50%;box-shadow:0 0 0 3px rgba(255,255,255,.06)}
+  .mk-dot.env-prod{background:var(--success-br)} .mk-dot.env-stage{background:var(--warning-br)} .mk-dot.env-int{background:var(--info-br)} .mk-dot.env-dev{background:var(--text-subtle)}
+  .mk-off{color:var(--stroke);font-size:14px}
+  .mx-issues{padding:3px 4px 7px;background:#121417;border-left:3px solid var(--stroke-subtle);animation:fade .3s ease}
+
+  /* ship flight */
+  .card.flight{transition:transform .68s cubic-bezier(.3,.7,.3,1),opacity .68s ease;z-index:30;pointer-events:none;border-color:var(--success-br);box-shadow:0 4px 18px rgba(0,0,0,.5)}
+
+  /* fleet-map hub nodes */
+  .hubnode{position:absolute;width:150px;display:flex;flex-direction:column;align-items:center;gap:6px}
+  .hubnode .gw{position:static;width:54px;height:54px;border-radius:12px;font-size:12px}
+  .hubnode .hublabel{display:flex;align-items:center;gap:6px;font-size:13px}
+  .hubnode .hubver{font-size:11px;color:var(--text-subtle)}
+  .card .hist{font-size:9px;color:var(--text-subtle);cursor:pointer;text-decoration:underline}
+
+  .rail{flex:0 0 auto;border-bottom:1px solid var(--stroke-subtle);background:#131518;padding:7px 14px;display:flex;align-items:center;gap:10px;overflow-x:auto}
+  .rail .lbl{font-size:11px;color:var(--text-subtle);white-space:nowrap}
+  .bundle{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--stroke);border-radius:8px;padding:5px 9px;cursor:pointer;white-space:nowrap;flex:0 0 auto}
+  .bundle.sel{border-color:var(--info-br);border-width:2px;padding:4px 8px}
+  .bundle .idc{width:26px;height:26px;border-radius:5px}
+  .bundle .ver{font-weight:700;font-size:12.5px}
+  .bundle .meta{font-size:10px;color:var(--text-subtle)}
+  .bundle .cnt{font-size:10px;background:var(--surface-2);border:1px solid var(--stroke);border-radius:9px;padding:0 7px;color:var(--text-subtle)}
+
+  .scrim{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:40;opacity:0;pointer-events:none;transition:opacity .2s}
+  .scrim.show{opacity:1;pointer-events:auto}
+  .drawer{position:fixed;top:0;right:0;height:100%;width:420px;background:#141619;border-left:1px solid var(--stroke);box-shadow:-10px 0 30px rgba(0,0,0,.4);transform:translateX(100%);transition:transform .22s;z-index:50;display:flex;flex-direction:column}
+  .drawer.open{transform:none}
+  .drawer-head{padding:13px 16px;border-bottom:1px solid var(--stroke-subtle);display:flex;align-items:flex-start;gap:10px}
+  .drawer-head .x{margin-left:auto;cursor:pointer;color:var(--text-subtle);font-size:20px;line-height:1}
+  .drawer-body{overflow:auto;padding:14px 16px;flex:1 1 auto}
+  .kv{display:flex;gap:8px;font-size:12.5px;margin:6px 0;align-items:center}
+  .kv .k{color:var(--text-subtle);min-width:84px}
+  .pill{display:inline-flex;align-items:center;font-size:11px;padding:1px 9px;border-radius:12px;border:1px solid transparent}
+  .pill.active{background:rgba(0,102,204,.16);color:var(--info-br);border-color:var(--info)}
+  .pill.good{background:rgba(61,115,23,.2);color:var(--success-br);border-color:var(--success)}
+  .pill.reject{background:rgba(177,56,11,.2);color:var(--danger-br);border-color:var(--danger)}
+  .pill.paused{background:rgba(220,166,20,.16);color:var(--warning);border-color:var(--warning)}
+  .btn{display:inline-flex;align-items:center;gap:6px;background:var(--info);color:#fff;border:none;border-radius:6px;padding:7px 12px;font-size:12.5px;cursor:pointer;margin-top:4px}
+  .btn:hover{background:var(--info-br)}
+  .vline{position:relative;margin:4px 0 0 7px;padding-left:20px;border-left:2px solid var(--stroke)}
+  .ev{position:relative;padding:0 0 15px}
+  .ev .d{position:absolute;left:-27px;top:3px;width:12px;height:12px;border-radius:50%;border:2px solid #141619}
+  .ev .when{color:var(--text-subtle);font-size:11px}
+  .ev .who{color:var(--text-subtle);font-size:11.5px;margin-top:2px}
+  .ev .dur{color:var(--text-subtle);font-size:10.5px;font-style:italic}
+
+  /* Fleet map (mock) */
+  .map{flex:1 1 auto;display:flex;min-height:0}
+  .map-canvas{flex:1 1 auto;position:relative;overflow:hidden;background:radial-gradient(1200px 600px at 60% 20%,rgba(25,181,182,.06),transparent)}
+  .gw{position:absolute;width:34px;height:34px;border-radius:7px;display:grid;place-items:center;font-size:9px;color:#06303a;font-weight:700;border:2px solid #0f1214}
+  .gw.sel{box-shadow:0 0 0 3px var(--info-br);animation:bpulse 1.6s infinite}
+  @keyframes bpulse{0%{box-shadow:0 0 0 2px var(--info-br)}70%{box-shadow:0 0 0 9px rgba(74,158,255,0)}100%{box-shadow:0 0 0 2px rgba(74,158,255,0)}}
+  .env-lane-label{position:absolute;font-size:10px;color:var(--text-subtle);text-transform:uppercase;letter-spacing:1px}
+  .bundle-detail{flex:0 0 360px;border-left:1px solid var(--stroke-subtle);background:#141619;padding:16px;overflow:auto}
+  .mini-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--stroke-subtle);font-size:12.5px}
+  .mini-row .bar{height:7px;border-radius:4px;background:var(--teal)}
+
+  .note{color:var(--text-subtle);font-size:11.5px}
+</style>
+</head>
+<body>
+  <div class="mock-banner">MOCKUP - simulated data on a fast clock for design feedback. Not wired to any live source.</div>
+
+  <div class="masthead">
+    <div class="brand-dot"></div>
+    <h1>HyperShell Fleet</h1>
+    <div class="clock"><span class="pulse"></span><span>LIVE</span><span class="simtime" id="simtime">--:--</span><span class="xbadge" id="xbadge">x1800</span></div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab" data-tab="map">Fleet Map</div>
+    <div class="tab active" data-tab="sdlc">Agent SDLC <span class="count" id="tabcount">0</span></div>
+  </div>
+
+  <div class="toolbar">
+    <span style="color:var(--text-subtle);font-size:12px">Scope</span>
+    <span class="chip on" data-scope="all">all</span>
+    <span class="chip" data-scope="agent/scope/int">int</span>
+    <span class="chip" data-scope="agent/scope/jsell">jsell</span>
+    <span class="chip" data-scope="agent/scope/team">team</span>
+    <input class="search" id="search" placeholder="Filter..." />
+    <div class="sim-ctrl">
+      <span class="pp" id="pp">&#10073;&#10073;</span>
+      <span class="sp" data-speed="300">300x</span>
+      <span class="sp on" data-speed="1800">1800x</span>
+      <span class="sp" data-speed="7200">7200x</span>
+    </div>
+    <span class="spacer"></span>
+    <span class="legend"><span class="sw" style="background:var(--info-br)"></span>in flight</span>
+    <span class="legend"><span class="sw" style="background:var(--success-br)"></span>done</span>
+    <span class="legend"><span class="sw" style="background:var(--warning)"></span>paused</span>
+    <span class="legend"><span class="sw" style="background:var(--danger-br)"></span>blocked</span>
+  </div>
+
+  <!-- ===================== SDLC AGING BOARD ===================== -->
+  <!-- Shared freight bar: same control + location (top, above the stage) as the fleet map -->
+  <div class="rail" id="rail"><span class="lbl">Freight:</span></div>
+
+  <div class="view" id="view-sdlc">
+    <div class="board-wrap">
+      <div class="axis" id="axis"><div class="cap">TIME<br/>IN<br/>PHASE</div></div>
+      <div class="board-area">
+        <div class="col-heads" id="colHeads"></div>
+        <div class="stage" id="stage"></div>
+      </div>
+    </div>
+    <div class="esc" id="esc"></div>
+  </div>
+
+  <!-- ===================== FLEET MAP (mock) ===================== -->
+  <div class="view hidden" id="view-map">
+    <div class="map" id="map"></div>
+  </div>
+
+  <div class="scrim" id="scrim"></div>
+  <div class="drawer" id="drawer"><div class="drawer-head" id="drawer-head"></div><div class="drawer-body" id="drawer-body"></div></div>
+
+<script>
+/* ---------- identicon ---------- */
+function fnv1a(s){let h=0x811c9dc5;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,0x01000193)>>>0}return h>>>0}
+function identicon(seed,sz){const h=fnv1a(seed),hue=h%360;const c=document.createElement('canvas');c.width=c.height=sz;c.className='idc';const g=c.getContext('2d');
+  g.fillStyle=`hsl(${hue},45%,17%)`;g.fillRect(0,0,sz,sz);g.fillStyle=`hsl(${hue},70%,62%)`;const u=sz/6;
+  for(let x=0;x<3;x++)for(let y=0;y<5;y++){if((fnv1a(seed+x+':'+y)&3)===0){g.fillRect(u+x*u,u*0.5+y*u,u*0.8,u*0.8);g.fillRect(sz-u-x*u-u*0.8,u*0.5+y*u,u*0.8,u*0.8);}}return c;}
+const ADJ=['brisk','amber','calm','swift','dusk','iron','jade','noble','vivid','lunar'],NOUN=['harbor','falcon','cedar','quartz','meadow','cipher','anchor','summit','willow','ember'];
+function identiname(seed){const h=fnv1a(seed);return ADJ[h%ADJ.length]+'-'+NOUN[(h>>8)%NOUN.length]}
+function identiconURL(seed,sz){return identicon(seed,sz).toDataURL()}
+
+/* ---------- phase vocabulary ---------- */
+const PHASE={
+  'agent/needs-input':{k:'paused',label:'needs-input'},'agent/duplicate':{k:'paused',label:'duplicate'},
+  'agent/blocked':{k:'reject',label:'blocked'},'agent/workable':{k:'active',label:'workable'},
+  'agent/reviewable-spec':{k:'active',label:'reviewable-spec'},'agent/review-spec-rejected':{k:'reject',label:'spec-rejected'},
+  'agent/review-spec-approved':{k:'good',label:'spec-approved'},'agent/reviewable-code':{k:'active',label:'reviewable-code'},
+  'agent/review-code-rejected':{k:'reject',label:'code-rejected'},'agent/review-code-approved':{k:'good',label:'code-approved'},
+  'agent/release-verified':{k:'good',label:'release-verified'},
+};
+function kColor(k){return k==='good'?'var(--success-br)':k==='reject'?'var(--danger-br)':k==='paused'?'var(--warning)':k==='active'?'var(--info-br)':'var(--unknown)'}
+const COLUMNS=[
+  {id:'intake',nm:'Intake',cls:'c-intake',phases:['agent/needs-input','agent/duplicate'],danger:true},
+  {id:'workable',nm:'Workable',phases:['agent/workable'],danger:true},
+  {id:'spec',nm:'Spec',phases:['agent/reviewable-spec','agent/review-spec-rejected'],danger:true},
+  {id:'spec-ok',nm:'Spec approved',phases:['agent/review-spec-approved']},
+  {id:'code',nm:'Code',phases:['agent/reviewable-code','agent/review-code-rejected'],danger:true},
+  {id:'code-ok',nm:'Code approved',phases:['agent/review-code-approved']},
+  {id:'shipped',nm:'Shipped',cls:'c-good',phases:['agent/release-verified']},
+];
+const NCOL=COLUMNS.length;
+// Shipped column is wider (holds the version x cluster matrix); others equal.
+const COLWEIGHT=COLUMNS.map(c=>c.id==='shipped'?2.1:1);
+const WTOTAL=COLWEIGHT.reduce((a,b)=>a+b,0);
+function colLeft(ci){let a=0;for(let k=0;k<ci;k++)a+=COLWEIGHT[k];return a/WTOTAL}
+function colWidth(ci){return COLWEIGHT[ci]/WTOTAL}
+function colIndexForIssue(i){
+  const c=current(i);
+  if(c==='agent/blocked'){for(let x=i.events.length-2;x>=0;x--){const idx=COLUMNS.findIndex(co=>co.phases.includes(i.events[x].label));if(idx>=0)return idx}return 4}
+  const idx=COLUMNS.findIndex(co=>co.phases.includes(c));return idx>=0?idx:0;
+}
+
+/* ---------- bundles + environments ----------
+   A bundle has a lifecycle: building (open, accumulating merged issues, not yet
+   deployed) -> cut (awaiting rollout) -> rolling out (dev/int/stage) -> in
+   production. The open bundle (cut:false) is always shown so not-yet-deployed
+   work is visible; frozen seeds are static snapshots. */
+// Hub clusters: each runs exactly ONE bundle at a time. New bundles promote
+// int(hyp2) -> stage(hyp1) -> prod(hyp0), so prod runs the most conservative version.
+const HUBS=[{id:'hyp0',env:'prod'},{id:'hyp1',env:'stage'},{id:'hyp2',env:'int'}];
+const HUBSEQ=['hyp2','hyp1','hyp0'];
+let HUBVER={hyp2:'v1.8.0',hyp1:'v1.7.3',hyp0:'v1.7.2'};
+let BUNDLES=[
+  {version:'v1.8.1',digest:'sha256:b2e1aa07c931',date:'2026-10-15',cut:false,frozen:false,created:Date.parse('2026-10-15T07:00:00'),rolloutIdx:0,nextAt:0},
+  {version:'v1.8.0',digest:'sha256:9a3f1c7e2b40',date:'2026-10-14',cut:true,frozen:true},
+  {version:'v1.7.3',digest:'sha256:44de88a01f22',date:'2026-10-09',cut:true,frozen:true},
+  {version:'v1.7.2',digest:'sha256:7c0b2d9ee510',date:'2026-10-02',cut:true,frozen:true},
+  {version:'v1.7.1',digest:'sha256:1f6a4c88b3d1',date:'2026-09-25',cut:true,frozen:true},
+];
+function bundleOf(v){return BUNDLES.find(b=>b.version===v)}
+function openBundle(){return BUNDLES.find(b=>!b.cut)}
+function hubsRunning(b){return HUBS.filter(h=>HUBVER[h.id]===b.version)}
+function bundleStatus(b){if(!b.cut)return{key:'building',label:'building'};const hr=hubsRunning(b);if(!hr.length)return{key:'prev',label:'previous'};if(hr.some(h=>h.env==='prod'))return{key:'prod',label:'in production'};return{key:'rolling',label:'rolling out'}}
+function bumpPatch(v){const m=v.replace('v','').split('.').map(Number);m[2]++;return 'v'+m.join('.')}
+const IDCU=new Map();function idcURL(seed){if(!IDCU.has(seed))IDCU.set(seed,identiconURL(seed,18));return IDCU.get(seed)}
+
+/* ---------- simulated clock ---------- */
+let simNow=Date.parse('2026-10-15T09:00:00');
+let speed=1800, playing=true, lastTs=0;
+const nowSim=()=>simNow;
+function hAgoSim(h){return new Date(simNow-h*3600e3)}
+function ev(label,h,who){return{label,at:hAgoSim(h)}}  // at=absolute ms
+function evAbs(label,ms){return{label,at:new Date(ms)}}
+
+/* ---------- seed issues ---------- */
+let SEQ=630;
+function mk(key,scope,title,events,extra){return Object.assign({key,num:400+(SEQ++%300),scope,title,events,bundle:null,pr:null,reason:null},extra||{})}
+const TITLES=['Gateway TLS cert rotation hook','Cluster drain on deprovision','Network mesh MTU autodetect','Release bundle changelog surface','RBAC audit log export','Gateway cold-start latency budget','Control-plane leader election','Managed cluster heartbeat SLO','Provider capability discovery cache','Gateway canary rollout policy'];
+
+let ISSUES=[
+  mk('HYPERSHELL-620','agent/scope/int','Ephemeral PR OpenShift e2e: auto-destroy on close',[ev('agent/workable',3)]),
+  mk('HYPERSHELL-511','agent/scope/jsell','Gateway version visibility + version-based placement',[ev('agent/workable',70),ev('agent/reviewable-spec',64),ev('agent/review-spec-rejected',58),ev('agent/reviewable-spec',50),ev('agent/review-spec-approved',44),ev('agent/reviewable-code',12)],{pr:'#551'}),
+  mk('HYPERSHELL-588','agent/scope/jsell','Konflux snapshot pinning for gateway releases',[ev('agent/workable',40),ev('agent/reviewable-spec',34),ev('agent/review-spec-rejected',22),ev('agent/reviewable-spec',14),ev('agent/review-spec-rejected',5)],{pr:'#557',reason:'Spec rejected 2x: pinning conflicts with Renovate bundle bumps.'}),
+  mk('HYPERSHELL-612','agent/scope/int','Per-gateway RBAC propagation to control plane',[ev('agent/needs-input',18)],{reason:'Triage: acceptance criteria reference an undefined "tenant tier".'}),
+  mk('HYPERSHELL-301','agent/scope/team','Add per-cluster gateway version column',[ev('agent/duplicate',52)],{reason:'Duplicate of HYPERSHELL-511.'}),
+  mk('HYPERSHELL-27','agent/scope/int','Web-console OpenTelemetry tracing',[ev('agent/workable',120),ev('agent/reviewable-spec',112),ev('agent/review-spec-approved',104),ev('agent/reviewable-code',96),ev('agent/review-code-rejected',70),ev('agent/reviewable-code',50),ev('agent/review-code-rejected',40),ev('agent/reviewable-code',30),ev('agent/review-code-rejected',16),ev('agent/blocked',4)],{pr:'#141',reason:'Blocked after 3 code-review rejections: trace context not propagated across BFF port boundary.'}),
+  mk('HYPERSHELL-605','agent/scope/team','Gateway network mesh health probe',[ev('agent/workable',30),ev('agent/reviewable-spec',24),ev('agent/review-spec-approved',6)],{pr:'#559'}),
+  mk('HYPERSHELL-410','agent/scope/int','Managed cluster capability label validation',[ev('agent/workable',60),ev('agent/reviewable-spec',54),ev('agent/review-spec-approved',48),ev('agent/reviewable-code',3)],{pr:'#549'}),
+  mk('HYPERSHELL-540','agent/scope/int','Project Jira to Done when execution record is Closed',[ev('agent/workable',150),ev('agent/reviewable-spec',140),ev('agent/review-spec-approved',132),ev('agent/reviewable-code',120),ev('agent/review-code-approved',10)],{pr:'#546'}),
+  mk('HYPERSHELL-400','agent/scope/int','Make agent/allowed a load-bearing authorization gate',[ev('agent/workable',96),ev('agent/reviewable-spec',90),ev('agent/review-spec-approved',80),ev('agent/reviewable-code',60),ev('agent/review-code-approved',30),ev('agent/release-verified',6)],{bundle:'v1.8.0',pr:'#542'}),
+  mk('HYPERSHELL-250','agent/scope/team','Remove legacy e2e-openshell.sh bash suite',[ev('agent/workable',200),ev('agent/reviewable-spec',190),ev('agent/review-spec-approved',180),ev('agent/reviewable-code',170),ev('agent/review-code-approved',150),ev('agent/release-verified',70)],{bundle:'v1.7.3',pr:'#505'}),
+  mk('HYPERSHELL-333','agent/scope/int','Control-plane watch stream reconnect backoff',[ev('agent/workable',240),ev('agent/reviewable-spec',230),ev('agent/review-spec-approved',220),ev('agent/reviewable-code',210),ev('agent/review-code-approved',200),ev('agent/release-verified',160)],{bundle:'v1.7.2',pr:'#520'}),
+];
+
+/* ---------- helpers ---------- */
+function current(i){return i.events[i.events.length-1].label}
+function enteredAt(i){return i.events[i.events.length-1].at.getTime()}
+function ageH(i){return Math.max(0,(simNow-enteredAt(i))/3600e3)}
+const ATTN=['agent/blocked','agent/needs-input','agent/duplicate','agent/review-spec-rejected','agent/review-code-rejected'];
+function needsAttention(i){return ATTN.includes(current(i))}
+/* Per-column Service Level Expectation (85th-pct time-in-phase, hours). A card that
+   crosses its SLE - or is paused and needs a human - leaves the board for the
+   Escalation lane, so columns stay bounded instead of piling up at the floor. */
+const SLE={intake:36,workable:60,spec:84,'spec-ok':48,code:132,'code-ok':48};
+const PAUSED=['agent/blocked','agent/needs-input','agent/duplicate'];
+function escalated(i){
+  if(current(i)==='agent/release-verified')return false;
+  if(PAUSED.includes(current(i)))return true;
+  const sle=SLE[COLUMNS[colIndexForIssue(i)].id];
+  return sle?ageH(i)>=sle:false;
+}
+function escReason(i){
+  const c=current(i);
+  if(c==='agent/blocked')return i.reason||'blocked - needs a human';
+  if(c==='agent/needs-input')return i.reason||'needs input from a human';
+  if(c==='agent/duplicate')return i.reason||'marked duplicate';
+  const col=COLUMNS[colIndexForIssue(i)];
+  return `stale in ${col.nm} - ${fmtAge(ageH(i))} (past ${fmtAge(SLE[col.id])} SLE)`;
+}
+function rejectCount(i){return i.events.filter(e=>e.label.includes('rejected')).length}
+/* Strikes toward the block threshold for the CURRENT review phase (flow-efficiency
+   signal). Rejections in the active column, capped at the block threshold. */
+const BLOCK_THRESHOLD={spec:3,code:10}; // matches .hypershell/README.md state machine
+function strikeInfo(i){
+  const colId=COLUMNS[colIndexForIssue(i)].id;
+  const type=colId==='spec'?'agent/review-spec-rejected':colId==='code'?'agent/review-code-rejected':null;
+  if(!type)return{n:0,max:3,colNm:''};
+  return{n:i.events.filter(e=>e.label===type).length,max:BLOCK_THRESHOLD[colId],colNm:COLUMNS[colIndexForIssue(i)].nm};
+}
+function fmtAge(h){if(h<1)return Math.max(1,Math.round(h*60))+'m';if(h<48)return Math.round(h)+'h';return Math.round(h/24)+'d'}
+function fmtDateRel(iso){const days=Math.round((simNow-new Date(iso).getTime())/86400e3);return days<=0?'today':days===1?'1d ago':days+'d ago'}
+const EDGES=[0,4,24,72,168,336];
+function ageFrac(h){for(let s=0;s<EDGES.length-1;s++){if(h<EDGES[s+1]){return (s+(h-EDGES[s])/(EDGES[s+1]-EDGES[s]))/(EDGES.length-1)}}return 1}
+function ageSev(h,attn){if(attn||h>=72)return'bad';if(h>=24)return'warn';return''}
+
+/* ---------- simulation stepping ---------- */
+const DWELL={'agent/workable':5,'agent/reviewable-spec':4,'agent/review-spec-rejected':3,'agent/review-spec-approved':3,'agent/reviewable-code':7,'agent/review-code-rejected':4,'agent/review-code-approved':4};
+function assignDwell(i){const base=DWELL[current(i)];i._dwell=base?base*(0.6+Math.random()*0.9):null;i._phaseAtDwell=current(i)}
+function advance(i){
+  const c=current(i),ms=simNow;
+  const push=(label)=>{i.events.push(evAbs(label,ms));assignDwell(i)};
+  switch(c){
+    case 'agent/workable': push('agent/reviewable-spec');break;
+    case 'agent/reviewable-spec': Math.random()<0.28?push('agent/review-spec-rejected'):push('agent/review-spec-approved');break;
+    case 'agent/review-spec-rejected': push('agent/reviewable-spec');break;
+    case 'agent/review-spec-approved': push('agent/reviewable-code');break;
+    case 'agent/reviewable-code':{const cr=i.events.filter(e=>e.label==='agent/review-code-rejected').length;
+      if(cr>=BLOCK_THRESHOLD.code){i.reason='Blocked after '+BLOCK_THRESHOLD.code+' code-review rejections.';i.events.push(evAbs('agent/blocked',ms));i._dwell=null;}
+      else Math.random()<0.33?push('agent/review-code-rejected'):push('agent/review-code-approved');break;}
+    case 'agent/review-code-rejected': push('agent/reviewable-code');break;
+    case 'agent/review-code-approved':{const ob=openBundle();i.bundle=ob?ob.version:BUNDLES[0].version;push('agent/release-verified');break;}
+  }
+}
+let lastSpawn=simNow;
+function step(){
+  ISSUES.forEach(i=>{if(i._dwell==null||i._phaseAtDwell!==current(i))assignDwell(i);
+    if(i._dwell!=null && ageH(i)>=i._dwell) advance(i);});
+  // bundle lifecycle: cut the open bundle once it holds work and has aged, then
+  // open the next one; roll cut (non-frozen) bundles through envs over time.
+  const ob=openBundle();
+  if(ob){const members=ISSUES.filter(x=>x.bundle===ob.version).length;
+    if(members>=2 && (simNow-ob.created)/3600e3>=10){
+      ob.cut=true;ob.rolloutIdx=0;ob.nextAt=simNow+1.5*3600e3;
+      const nv=bumpPatch(ob.version);
+      BUNDLES.unshift({version:nv,digest:'sha256:'+(fnv1a(nv)>>>0).toString(16).padStart(10,'0')+'cut',date:new Date(simNow).toISOString(),cut:false,frozen:false,created:simNow,rolloutIdx:0,nextAt:0});
+    }
+  }
+  BUNDLES.forEach(b=>{if(b.cut&&!b.frozen&&b.rolloutIdx<HUBSEQ.length&&simNow>=b.nextAt){
+    HUBVER[HUBSEQ[b.rolloutIdx]]=b.version;b.rolloutIdx++;b.nextAt=simNow+(2+Math.random()*3)*3600e3;}});
+  // keep the funnel fed: spawn a fresh workable item periodically
+  if(ISSUES.length<16 && (simNow-lastSpawn)/3600e3>=8){lastSpawn=simNow;
+    const scopes=['agent/scope/int','agent/scope/jsell','agent/scope/team'];
+    const it=mk('HYPERSHELL-'+(700+SEQ%99),scopes[SEQ%3],TITLES[SEQ%TITLES.length],[evAbs('agent/workable',simNow)]);
+    ISSUES.push(it);
+  }
+}
+
+/* ---------- card elements ---------- */
+const cardState=new Map(); // key -> {el, x, y, placed, sig}
+function kClass(i){return 'k-'+PHASE[current(i)].k}
+function cardInner(i){
+  const c=current(i),ph=PHASE[c],h=ageH(i),attn=needsAttention(i),rc=rejectCount(i),sev=ageSev(h,attn);
+  const foot=`<span class="scope">${i.scope.replace('agent/scope/','@')}</span><span class="age ${sev}" data-age>${attn?'&#9888; ':''}${fmtAge(h)}</span>`;
+  const si=strikeInfo(i),blocked=c==='agent/blocked';let meter='';
+  if(si.n>0||blocked){const frac=blocked?1:si.n/si.max;const tone=frac>=1?'danger':frac>=0.7?'warn':'mild';
+    const lbl=blocked?'blocked':si.n>=si.max?'blocked':si.n+'/'+si.max;
+    const ttl=`${si.n} of ${si.max} rejections in ${si.colNm} review - ${frac>=1?'blocked':(si.max-si.n)+' until blocked'}`;
+    let gauge;
+    if(si.max<=4){let cells='';for(let k=0;k<si.max;k++)cells+=`<span class="cell ${k<si.n?('f-'+tone):''}"></span>`;gauge=cells;}
+    else{gauge=`<span class="bar"><span class="fill f-${tone}" style="width:${Math.round(frac*100)}%"></span></span>`;}
+    meter=`<span class="meter" title="${ttl}">${gauge}<span class="mlabel ${tone}">${lbl}</span></span>`;}
+  return `<div class="top"><span class="key">${i.key}</span>${meter}</div>
+    <div class="ttl">${i.title}</div>
+    <div class="foot">${foot}</div>
+    ${attn&&i.reason?`<div class="reason">${i.reason}</div>`:''}`;
+}
+function ensureCard(i){
+  let s=cardState.get(i.key);
+  if(!s){const el=document.createElement('div');el.className='card '+kClass(i);el.innerHTML=cardInner(i);
+    el.addEventListener('click',e=>{
+      if(e.target.closest('[data-hist]')){openDrawer(i.key);return;}
+      if(current(i)==='agent/release-verified'){jumpToBundle(i.bundle);return;}
+      openDrawer(i.key);
+    });
+    document.getElementById('stage').appendChild(el);
+    s={el,x:0,y:0,placed:false,sig:''};cardState.set(i.key,s);
+  }
+  return s;
+}
+
+/* A shipping card flies from its last board position into the Shipped matrix. */
+function launchFlight(i,s){
+  const stage=document.getElementById('stage');const W=stage.clientWidth;
+  const tx=colLeft(NCOL-1)*W+10,ty=44;
+  const g=document.createElement('div');g.className='card k-good flight';
+  g.style.width=Math.max(90,s.el.offsetWidth||120)+'px';
+  g.innerHTML=`<div class="top"><span class="key">${i.key}</span></div><div class="ttl">shipped &rarr; ${i.bundle}</div>`;
+  stage.appendChild(g);
+  g.style.transform=`translate(${s.x.toFixed(1)}px,${s.y.toFixed(1)}px)`;
+  g.getBoundingClientRect(); // force reflow so the transition runs
+  requestAnimationFrame(()=>{g.style.transform=`translate(${tx.toFixed(1)}px,${ty}px) scale(.6)`;g.style.opacity='0';});
+  setTimeout(()=>g.remove(),700);
+}
+
+/* ---------- layout + animate (rAF) ---------- */
+function layout(){
+  const stage=document.getElementById('stage');
+  const W=stage.clientWidth,H=stage.clientHeight;if(!W||!H)return;
+  const gap=6,pad=6,fallbackH=74;
+  const vis=visibleSet();
+  // board holds only in-flight, within-SLE work; shipped -> crates, escalated -> Escalation lane
+  const boardVis=vis.filter(i=>current(i)!=='agent/release-verified'&&!escalated(i));
+  const visKeys=new Set(boardVis.map(i=>i.key));
+
+  // drop aging cards whose issue has left the board (shipped or escalated);
+  // a shipping card flies from its last column position into the Shipped matrix.
+  ISSUES.forEach(i=>{const shipd=current(i)==='agent/release-verified',esc=escalated(i);
+    if(shipd||esc){const s=cardState.get(i.key);if(s){if(shipd)launchFlight(i,s);s.el.remove();cardState.delete(i.key);}}});
+
+  // hide filtered-out cards
+  cardState.forEach((s,key)=>{if(!visKeys.has(key)){s.el.style.display='none';}});
+
+  for(let ci=0;ci<NCOL;ci++){
+    if(COLUMNS[ci].id==='shipped')continue;
+    const items=boardVis.filter(i=>colIndexForIssue(i)===ci).sort((a,b)=>ageH(a)-ageH(b));
+    let lastBottom=-Infinity;
+    const x=colLeft(ci)*W+gap, cw=colWidth(ci)*W-2*gap;
+    items.forEach(i=>{
+      const s=ensureCard(i);s.el.style.display='';
+      // refresh content when phase changes
+      const sig=current(i)+'|'+rejectCount(i)+'|'+(i.bundle||'');
+      if(s.sig!==sig){s.el.className='card '+kClass(i)+(needsAttention(i)?' attn':'')+(PHASE[current(i)].k==='paused'?' paused':'');
+        s.el.innerHTML=cardInner(i);s.sig=sig;s._h=0;s.ageSpan=s.el.querySelector('[data-age]');}
+      s.el.classList.toggle('dim',!!bundleFilter&&i.bundle!==bundleFilter);
+      if(!s.ageSpan)s.ageSpan=s.el.querySelector('[data-age]');
+      if(s.ageSpan){const h=ageH(i),attn=needsAttention(i);s.ageSpan.textContent=(attn&&current(i)!=='agent/release-verified'?'⚠ ':'')+fmtAge(h);s.ageSpan.className='age '+ageSev(h,attn);}
+      s.el.style.width=cw+'px';
+      const chh=s._h||(s._h=s.el.offsetHeight||fallbackH);
+      let ty=pad+ageFrac(ageH(i))*(H-chh-pad*2);
+      if(ty<lastBottom+gap)ty=lastBottom+gap;
+      ty=Math.min(ty,H-chh-pad);lastBottom=ty+chh;
+      s.tx=x;s.ty=ty;
+      if(!s.placed){s.x=x;s.y=Math.min(ty+40,H-chh);s.placed=true;} // new cards rise into place
+    });
+  }
+  // ease toward targets
+  cardState.forEach(s=>{if(s.el.style.display==='none')return;
+    s.x+=((s.tx??s.x)-s.x)*0.2;s.y+=((s.ty??s.y)-s.y)*0.2;
+    s.el.style.transform=`translate(${s.x.toFixed(1)}px,${s.y.toFixed(1)}px)`;});
+}
+
+/* ---------- static chrome ---------- */
+function buildStaticStage(){
+  const stage=document.getElementById('stage');
+  for(let ci=1;ci<NCOL;ci++){const sp=document.createElement('div');sp.className='colsep';sp.style.left=(colLeft(ci)*100)+'%';stage.appendChild(sp)}
+  [4,24,72].forEach(h=>{const b=document.createElement('div');b.className='bandline';b.style.top=(ageFrac(h)*100)+'%';stage.appendChild(b)});
+  COLUMNS.forEach((c,ci)=>{const sle=SLE[c.id];if(!sle)return;
+    const ln=document.createElement('div');ln.className='sleline';ln.style.left=(colLeft(ci)*100)+'%';ln.style.width=(colWidth(ci)*100)+'%';ln.style.top=(ageFrac(sle)*100)+'%';
+    ln.innerHTML=`<span class="slelbl">SLE ${fmtAge(sle)}</span>`;stage.appendChild(ln);});
+  const sh=document.createElement('div');sh.id='shipped';sh.style.left=(colLeft(NCOL-1)*100)+'%';sh.style.width=(colWidth(NCOL-1)*100)+'%';stage.appendChild(sh);
+}
+/* Shipped area = version x hub-cluster matrix. Rows are bundles newest->oldest
+   (history); columns are the hub clusters; a marker sits in each hub's CURRENT
+   version so deployment, history and drift read at a glance. A row expands to its
+   issues (bundle contents). */
+let expandedVer=null,lastMatrixSig='';
+function renderMatrix(){
+  const el=document.getElementById('shipped');if(!el)return;
+  const vis=visibleSet();
+  const rows=BUNDLES.slice(0,8);
+  const sig=HUBS.map(h=>HUBVER[h.id]).join(',')+'|'+expandedVer+'|'+bundleFilter+'|'+scope+'|'+q+'||'
+    +rows.map(b=>b.version+':'+bundleStatus(b).key+':'+vis.filter(i=>i.bundle===b.version).length).join('|');
+  if(sig===lastMatrixSig)return;lastMatrixSig=sig;
+  let html=`<div class="mx-title">Releases &times; hub clusters</div>`
+    +`<div class="mx-head"><span class="mx-ver"></span>${HUBS.map(h=>`<span class="mx-cell mx-hub env-${h.env}" title="${h.id} (${h.env})">${h.id}<i>${h.env}</i></span>`).join('')}</div>`;
+  rows.forEach(b=>{
+    const st=bundleStatus(b),exp=expandedVer===b.version;
+    const dim=bundleFilter&&bundleFilter!==b.version?' dim':'';
+    const cells=HUBS.map(h=>{const on=HUBVER[h.id]===b.version;
+      return `<span class="mx-cell">${on?`<span class="mk-dot env-${h.env}" title="${h.id} runs ${b.version}"></span>`:'<span class="mk-off">&middot;</span>'}</span>`;}).join('');
+    html+=`<div class="mx-row st-${st.key}${exp?' exp':''}${dim}" data-ver="${b.version}">
+      <span class="mx-ver"><img class="bidc-sm" src="${idcURL(b.digest)}" alt=""/><span class="mxv"><b>${b.version}</b><i class="mxs st-${st.key}">${st.label}</i></span></span>
+      ${cells}</div>`;
+    if(exp){const issues=vis.filter(i=>i.bundle===b.version);
+      html+=`<div class="mx-issues">${issues.length?issues.map(i=>`<div class="mini" data-key="${i.key}"><span class="mk">${i.key.replace('HYPERSHELL-','#')}</span><span class="mt">${i.title}</span><span class="ms">@${i.scope.replace('agent/scope/','')}</span></div>`).join(''):'<div class="cempty">no issues attributed</div>'}</div>`;}
+  });
+  el.innerHTML=html;
+  el.querySelectorAll('.mx-row').forEach(r=>r.onclick=()=>{expandedVer=expandedVer===r.dataset.ver?null:r.dataset.ver;renderMatrix()});
+  el.querySelectorAll('.mini').forEach(m=>m.onclick=e=>{e.stopPropagation();openDrawer(m.dataset.key)});
+}
+function buildAxis(){const ax=document.getElementById('axis');ax.querySelectorAll('.tick').forEach(e=>e.remove());
+  [{h:0,t:'now'},{h:4,t:'4h'},{h:24,t:'1d'},{h:72,t:'3d'},{h:168,t:'7d'}].forEach(m=>{const d=document.createElement('div');d.className='tick';d.style.top='calc('+(ageFrac(m.h)*100)+'% + 4px)';d.textContent=m.t;ax.appendChild(d)});}
+function buildColHeads(){const ch=document.getElementById('colHeads');ch.innerHTML=COLUMNS.map((c,ci)=>`<div class="ch ${c.cls||''}" style="flex:${COLWEIGHT[ci]} 1 0"><span class="nm">${c.nm}</span><span class="wip" data-wip="${c.id}">0</span></div>`).join('')}
+function updateChrome(){
+  const vis=visibleSet();
+  const boardVis=vis.filter(i=>current(i)!=='agent/release-verified'&&!escalated(i));
+  COLUMNS.forEach((c,ci)=>{const el=document.querySelector(`[data-wip="${c.id}"]`);if(!el)return;
+    el.textContent=(c.id==='shipped'?vis.filter(i=>current(i)==='agent/release-verified'):boardVis.filter(i=>colIndexForIssue(i)===ci)).length;});
+  document.getElementById('tabcount').textContent=ISSUES.length;
+  const d=new Date(simNow);
+  document.getElementById('simtime').textContent=d.toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+  document.getElementById('xbadge').textContent=playing?('x'+speed):'paused';
+}
+
+/* ---------- escalation lane (past-SLE + paused work that needs a human) ---------- */
+function escSeverity(i){const c=current(i);if(c==='agent/blocked')return 0;if(PAUSED.includes(c))return 1;return 2}
+let lastEscSig='';
+function renderEscalation(){
+  const el=document.getElementById('esc');if(!el)return;
+  const list=visibleSet().filter(escalated).sort((a,b)=>escSeverity(a)-escSeverity(b)||ageH(b)-ageH(a));
+  const sig=`${scope}|${q}|`+list.map(i=>i.key+current(i)+Math.round(ageH(i))).join(',');
+  if(sig===lastEscSig)return;lastEscSig=sig;
+  const head=`<div class="esc-head"><span class="ic">!</span><h2>Escalation</h2><span class="esc-sub">${list.length?list.length+' item'+(list.length>1?'s':'')+' past SLE or awaiting a human':'clear - funnel is healthy'}</span></div>`;
+  if(!list.length){el.classList.add('clear');el.innerHTML=head;return;}
+  el.classList.remove('clear');
+  const cards=list.map(i=>{const ph=PHASE[current(i)];const sev=escSeverity(i);
+    return `<div class="ecard sev-${sev}" data-key="${i.key}">
+      <div class="er1"><span class="ekey">${i.key.replace('HYPERSHELL-','#')}</span><span class="pill ${ph.k}">${ph.label}</span><span class="eage">${fmtAge(ageH(i))}</span></div>
+      <div class="etitle">${i.title}</div>
+      <div class="ereason">${escReason(i)}</div></div>`;}).join('');
+  el.innerHTML=head+`<div class="esc-row">${cards}</div>`;
+  el.querySelectorAll('.ecard').forEach(c=>c.onclick=()=>openDrawer(c.dataset.key));
+}
+
+/* ---------- bundle rail ---------- */
+let lastRailSig='';
+function renderRail(){const rail=document.getElementById('rail');
+  const sig=bundleFilter+'||'+HUBS.map(h=>HUBVER[h.id]).join(',')+'||'+BUNDLES.map(b=>b.version+':'+bundleStatus(b).key+':'+ISSUES.filter(i=>i.bundle===b.version).length).join('|');
+  if(sig===lastRailSig)return;lastRailSig=sig;
+  rail.querySelectorAll('.bundle').forEach(e=>e.remove());
+  BUNDLES.forEach(b=>{const cnt=ISSUES.filter(i=>i.bundle===b.version).length;
+    const el=document.createElement('div');el.className='bundle'+(bundleFilter===b.version?' sel':'');
+    el.appendChild(identicon(b.digest,26));
+    const hr=hubsRunning(b);const d=document.createElement('div');d.innerHTML=`<div class="ver">${b.version}</div><div class="meta">${hr.length?hr.map(h=>h.id).join(' + '):bundleStatus(b).label} &middot; ${fmtDateRel(b.date)}</div>`;el.appendChild(d);
+    const c=document.createElement('span');c.className='cnt';c.textContent=cnt+' issue'+(cnt===1?'':'s');el.appendChild(c);
+    el.onclick=()=>selectBundle(b.version);
+    rail.appendChild(el);});
+}
+/* The freight bar is one shared control: selecting a bundle filters the SDLC board
+   AND drives the map's open bundle, so it behaves the same on both tabs. */
+function selectBundle(ver){
+  bundleFilter=bundleFilter===ver?null:ver;
+  mapBundle=bundleFilter;
+  renderRail();
+  if(currentTab==='map')renderMap();
+}
+
+/* ---------- filters ---------- */
+let scope='all',attnOnly=false,q='',bundleFilter=null;
+function visibleSet(){return ISSUES.filter(i=>{
+  if(scope!=='all'&&i.scope!==scope)return false;
+  if(attnOnly&&!needsAttention(i))return false;
+  if(q){if(!(i.key+' '+i.title).toLowerCase().includes(q.toLowerCase()))return false}
+  return true;});}
+
+/* ---------- drawer ---------- */
+function openDrawer(key){const i=ISSUES.find(x=>x.key===key);if(!i)return;const c=current(i),ph=PHASE[c];
+  document.getElementById('drawer-head').innerHTML=`<div><div style="font-weight:700;font-size:15px">${i.key}</div><div style="color:var(--text-subtle);font-size:12px">GH #${i.num}</div></div><span class="x" id="dx">&times;</span>`;
+  let b=`<div style="font-size:14px;margin-bottom:10px">${i.title}</div>
+    <div class="kv"><span class="k">Current</span><span class="pill ${ph.k}">${ph.label}</span></div>
+    <div class="kv"><span class="k">In phase</span><span>${fmtAge(ageH(i))}</span></div>
+    <div class="kv"><span class="k">Scope</span><span>${i.scope.replace('agent/scope/','@')}</span></div>
+    <div class="kv"><span class="k">Bundle</span><span>${i.bundle?`<span class="pill good">${i.bundle}</span>`:'<span class="note">not shipped</span>'}</span></div>
+    <div class="kv"><span class="k">PR</span><span>${i.pr?`<a href="#">${i.pr}</a>`:'<span class="note">none</span>'}</span></div>
+    <div class="kv"><span class="k">Rejections</span><span>${rejectCount(i)}</span></div>`;
+  if(c==='agent/release-verified'){const bu=bundleOf(i.bundle);
+    const hr=bu?hubsRunning(bu):[];
+    b+=`<div class="kv"><span class="k">Deployed</span><span>${hr.length?hr.map(h=>`<span class="env ${h.env}" style="margin-right:4px">${h.id} (${h.env})</span>`).join(''):'<span class="note">not on any hub</span>'}</span></div>
+      <button class="btn" onclick="jumpToBundle('${i.bundle}')">Open ${i.bundle} in Fleet Map &rarr;</button>`;}
+  if(i.reason)b+=`<div class="note" style="color:var(--danger-br);margin:8px 0 2px">${i.reason}</div>`;
+  b+=`<h3 style="font-size:12px;margin:16px 0 8px;color:var(--text-subtle)">LABEL HISTORY (newest first)</h3><div class="vline">`;
+  const rev=[...i.events].reverse();
+  rev.forEach((e,idx)=>{const p=PHASE[e.label];const durH=(idx===0?(simNow-e.at.getTime()):(rev[idx-1].at.getTime()-e.at.getTime()))/3600e3;
+    b+=`<div class="ev"><div class="d" style="background:${kColor(p.k)}"></div>
+      <div class="when">${e.at.toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
+      <div><span class="pill ${p.k}">${p.label}</span></div>
+      <div class="dur">held ${fmtAge(Math.max(0.05,durH))}${idx===0?' (current)':''}</div></div>`;});
+  b+=`</div>`;document.getElementById('drawer-body').innerHTML=b;
+  document.getElementById('drawer').classList.add('open');document.getElementById('scrim').classList.add('show');
+  document.getElementById('dx').onclick=closeDrawer;}
+function closeDrawer(){document.getElementById('drawer').classList.remove('open');document.getElementById('scrim').classList.remove('show')}
+document.getElementById('scrim').onclick=closeDrawer;
+
+/* ---------- fleet map (mock) + jump-to-bundle ---------- */
+let currentTab='sdlc';
+function switchTab(name){currentTab=name;document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab===name));
+  document.getElementById('view-sdlc').classList.toggle('hidden',name!=='sdlc');
+  document.getElementById('view-map').classList.toggle('hidden',name!=='map');}
+let mapBundle=null;
+function jumpToBundle(ver){closeDrawer();mapBundle=ver;bundleFilter=ver;renderRail();switchTab('map');renderMap();}
+function renderMap(){
+  const map=document.getElementById('map');const b=bundleOf(mapBundle);
+  // canvas: the three hub clusters, each labeled with the bundle it currently runs;
+  // the selected bundle's hubs glow.
+  let nodes='';
+  HUBS.forEach((h,k)=>{const ver=HUBVER[h.id];const bb=bundleOf(ver);const hue=bb?fnv1a(bb.digest)%360:210;
+    const sel=(b&&ver===mapBundle)?' sel':'';const x=90+k*210;
+    nodes+=`<div class="hubnode" style="left:${x}px;top:42%">
+        <div class="gw${sel}" style="background:hsl(${hue},60%,60%)">${(ver||'?').replace('v','')}</div>
+        <div class="hublabel"><b>${h.id}</b><span class="env ${h.env}">${h.env}</span></div>
+        <div class="hubver">${ver||'-'}</div>
+      </div>`;
+  });
+  let detail='';
+  if(b){const issues=ISSUES.filter(i=>i.bundle===b.version);const hr=hubsRunning(b);
+    detail=`<div style="display:flex;gap:10px;align-items:center;margin-bottom:12px">
+        <span id="bidc"></span>
+        <div><div style="font-weight:700;font-size:16px">${b.version}</div>
+          <div class="note">${identiname(b.digest)} &middot; ${fmtDateRel(b.date)} &middot; ${bundleStatus(b).label}</div>
+          <div class="note mono">${b.digest}</div></div></div>
+      <h3 style="font-size:12px;color:var(--text-subtle);margin:10px 0 6px">RUNNING ON</h3>
+      ${hr.length?hr.map(h=>`<div class="mini-row"><span class="env ${h.env}">${h.env}</span><span>${h.id}</span></div>`).join(''):'<div class="note">Not currently on any hub cluster.</div>'}
+      <h3 style="font-size:12px;color:var(--text-subtle);margin:16px 0 6px">IN THIS BUNDLE</h3>
+      ${issues.length?issues.map(i=>`<div class="mini-row"><span class="mono" style="color:var(--text-subtle)">${i.pr||'-'}</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i.title}</span><a href="#" style="margin-left:auto" onclick="openFromMap('${i.key}');return false">${i.key.replace('HYPERSHELL-','#')}</a></div>`).join(''):'<div class="note">No issues attributed.</div>'}
+      <button class="btn" style="background:var(--surface-2);margin-top:14px" onclick="switchTab('sdlc')">&larr; Back to Agent SDLC</button>`;
+  } else {
+    detail=`<div class="note">Click a Shipped card (or a bundle) in the Agent SDLC tab to open it here.</div>`;
+  }
+  map.innerHTML=`<div class="map-canvas">${nodes}</div><div class="bundle-detail">${detail}</div>`;
+  if(b){const slot=document.getElementById('bidc');if(slot)slot.appendChild(identicon(b.digest,40))}
+}
+function openFromMap(key){switchTab('sdlc');openDrawer(key)}
+
+/* ---------- toolbar wiring ---------- */
+document.querySelectorAll('.chip[data-scope]').forEach(c=>c.onclick=()=>{document.querySelectorAll('.chip[data-scope]').forEach(x=>x.classList.remove('on'));c.classList.add('on');scope=c.dataset.scope});
+document.getElementById('search').oninput=function(){q=this.value};
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{if(t.dataset.tab==='map')renderMap();switchTab(t.dataset.tab)});
+document.getElementById('pp').onclick=function(){playing=!playing;this.innerHTML=playing?'&#10073;&#10073;':'&#9654;'};
+document.querySelectorAll('.sp').forEach(s=>s.onclick=()=>{document.querySelectorAll('.sp').forEach(x=>x.classList.remove('on'));s.classList.add('on');speed=+s.dataset.speed});
+
+/* ---------- main loop ---------- */
+buildColHeads();buildStaticStage();buildAxis();renderRail();renderMatrix();renderEscalation();
+let chromeAcc=0;
+function frame(ts){const dt=lastTs?Math.min(ts-lastTs,100):16;lastTs=ts;
+  if(playing)simNow+=dt*speed;
+  step();layout();
+  chromeAcc+=dt;if(chromeAcc>120){chromeAcc=0;updateChrome();renderRail();renderMatrix();renderEscalation();}
+  requestAnimationFrame(frame);}
+requestAnimationFrame(frame);
+window.addEventListener('resize',()=>{buildAxis();});
+updateChrome();
+</script>
+</body>
+</html>
